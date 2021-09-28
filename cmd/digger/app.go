@@ -9,18 +9,6 @@ import (
 	"syscall"
 )
 
-package main
-
-import (
-"context"
-"flag"
-"github.com/sirupsen/logrus"
-"os"
-"os/signal"
-"syscall"
-"time"
-)
-
 func app() error {
 	appCtx, cancel := context.WithCancel(context.Background())
 
