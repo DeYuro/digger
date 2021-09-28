@@ -2,7 +2,8 @@ package main
 
 import (
 	"context"
-	"flag"
+	"github.com/deyuro/digger/internal/config"
+	"github.com/deyuro/digger/internal/service"
 	"github.com/sirupsen/logrus"
 	"os"
 	"os/signal"
@@ -12,18 +13,15 @@ import (
 func app() error {
 	appCtx, cancel := context.WithCancel(context.Background())
 
-	var daemon bool
-	flag.BoolVar(&daemon, "daemon", false, "daemon mode")
-	flag.Parse()
-
 	errChan := make(chan error)
 	go func() {
 		handleSIGINT()
 		cancel()
 	}()
 
+
 	go func() {
-		errChan <- run(cancel, daemon)
+		errChan <- run(logrus.New())
 	}()
 	select {
 	case err := <-errChan:
@@ -36,8 +34,14 @@ func app() error {
 
 
 
-func run(cancel context.CancelFunc, daemon bool) error {
+func run(logger *logrus.Logger) error {
+	digList, err := config.Load("/home/droot/go/src/github.com/deyuro/digger/.data/diglist.json")
+	svc := service.NewService(digList, logger, `127.0.0.53`, 5, 0)
+	if err != nil {
+		return err
+	}
 
+	svc.Run()
 	return nil
 }
 
