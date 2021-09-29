@@ -2,12 +2,15 @@ package main
 
 import (
 	"context"
+	"flag"
 	"github.com/deyuro/digger/internal/config"
 	"github.com/deyuro/digger/internal/service"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
 func app() error {
@@ -18,7 +21,6 @@ func app() error {
 		handleSIGINT()
 		cancel()
 	}()
-
 
 	go func() {
 		errChan <- run(logrus.New())
@@ -31,12 +33,22 @@ func app() error {
 	}
 }
 
-
-
-
 func run(logger *logrus.Logger) error {
-	digList, err := config.Load("/home/droot/go/src/github.com/deyuro/digger/.data/diglist.json")
-	svc := service.NewService(digList, logger, `127.0.0.53`, 5, 0)
+	resolver := flag.String(`resolver`, `127.0.0.1`, `resolver ip`)
+	wait := flag.Int(`wait`, 0, `sleep between command`)
+	times := flag.Int(`times`, 0, `how many times execute dig list`)
+	threads := flag.Int(`threads`, 1, `threads`)
+	output := flag.Bool(`output`, false, `show output`)
+
+	digListPath := flag.String(`diglist`, `./.data/diglist.json`, `path to diglist`)
+	flag.Parse()
+
+	if *threads < 1 {
+		return errors.New("threads must be > 0")
+	}
+
+	digList, err := config.Load(*digListPath)
+	svc := service.NewService(digList, logger, *resolver, *times, *output, time.Second*time.Duration(*wait), *threads)
 	if err != nil {
 		return err
 	}
